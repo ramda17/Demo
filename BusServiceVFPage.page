@@ -1,0 +1,541 @@
+<apex:page controller="BusServices"
+           sidebar="true"
+           standardStylesheets="false"
+           doctype="html-5.0"
+           lightningStyleSheets="true"
+           showHeader="false"
+>
+    <apex:slds />
+    
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <!--[if !mso]><!-->
+            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <!--<![endif]-->
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    </head>
+    
+    <style>
+    .jumbotron_box {
+      background: #34467f;
+    }
+
+    .myBox {
+
+        margin-top: 40rem;
+        margin-left: 3rem;
+        margin:right: 3rem;
+    }
+
+    .wizard_box {
+        margin-left: 3rem;
+        margin-right: 3rem;
+    }
+
+    .heading {
+       color: #ededea;
+       font-size: 100%;
+    }
+
+    .grid {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        margin-right: 1rem;
+        margin-left: 1rem;
+    }
+
+    .shadowClass {
+        box-shadow: rgba(0, 0, 0, 0.20) 0 3px 6px;
+    }
+
+    .postalCodeAndSchoolSelect {
+       margin: 2rem;
+       width: 50%;
+    }
+
+    .BoxColumn {
+       padding-bottom: 10px;
+    }
+
+    .childrenCol {
+       padding-right: 2rem;
+    }
+
+    .parentCol {
+       padding-left: 1rem;
+       padding-right: 1rem;
+       padding-bottom: 1rem;
+       padding-top: 1rem;
+    }
+
+    </style>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/css/toastr.css" rel="stylesheet"/>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.1/js/toastr.js"></script>
+
+    <body class="slds-scope slds-container slds-container_center">
+
+        <div class="jumbotron_box slds-box slds-box_x-large  slds-grid slds-gutters slds-wrap">
+            <div class="slds-col slds-size_1-of-1 slds-text-align_center" >
+                <h1 style="font-size:3.375em" class="slds-text-heading_large heading">Royal Star Bus Services </h1>
+            </div>
+        </div>
+        <br />
+        <apex:form id="ApexForm">
+
+        <div class="slds-box wizard_box">
+            <div class="slds-wizard" role="navigation">
+            <ol class="slds-wizard__list">
+                <li id="CheckBuses" class="slds-wizard__item slds-is-active">
+                    <span class="slds-wizard__marker"></span>
+                </li>
+                <li id="RouteSelection" class="slds-wizard__item">
+                    <span class="slds-wizard__marker"></span>
+                </li>
+                <li id="BusBooking" class="slds-wizard__item">
+                    <span class="slds-wizard__marker"></span>
+                </li>
+                <li id="Confirmation" class="slds-wizard__item">
+                    <span class="slds-wizard__marker"></span>
+                </li>
+            </ol>
+            <span class="slds-wizard__progress">
+                <span id="Wizard_Progress" class="slds-wizard__progress-bar" style="width:0%;"></span>
+            </span>
+            </div>
+        </div>
+
+        <br />
+
+        <apex:outputPanel id="firstOutputPanel">
+            <apex:pageBlock rendered="{!showPageBlockToEnterPostalCodeAndSelectSchool}">
+                <div class="slds-box wizard_box slds-theme_shade">
+                    <div class="grid slds-grid slds-gutters slds-wrap slds-align_absolute-center">
+                        <div style="padding-bottom:2rem;" class="slds-col slds-size_1-of-1">
+                            <h1 class="slds-text-heading_large slds-align_absolute-center">Enter Postal Code and Destination Details</h1>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label slds-float_right">Postal Code</label>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                            <!-- <label class="slds-form-element__label">PIN</label> -->
+                            <apex:input styleClass="slds-float_left" id="PostalCode" style="width: 10rem;" type="text" html-placeholder="PIN" html-maxLength="6" value="{!postalCode}"/>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label slds-float_right">Select School</label>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                        <!-- <label class="slds-form-element__label">Select School</label> -->
+                            <apex:selectList styleClass="slds-float_left" style="width: 10rem;" size="1" value="{!selectedSchoolOption}" id="SchoolList">
+                                <apex:selectOptions value="{!schoolOptions}"/>
+                            </apex:selectList>
+                        </div>
+                    </div>
+
+                    <div class="slds-grid">
+                        <div class="slds-col slds-size_1-of-1">
+                            <div style="padding-top:2rem;" class="slds-float_right">
+                                <apex:commandButton styleClass="slds-button slds-button_brand" value="Check Buses" onclick="if(validatePostalInput() == true) return false;" reRender="firstOutputPanel, ScriptOutputPanel" onComplete="checkRoutes();"/>
+                            </div>
+                        </div>
+                    </div>
+                    <apex:actionFunction name="checkRoutes" action="{!checkAvailableRoutes}" oncomplete="wizardStateHandler('RouteSelection'); return false;" reRender="firstOutputPanel, selectRouteOutputPanel, ScriptOutputPanel">
+                    </apex:actionFunction>
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel>
+        <apex:outputPanel id="selectRouteOutputPanel">
+            <apex:pageBlock id="selectRoutePageBlock" rendered="{!showCheckBusesResults}">
+                <div class="slds-box wizard_box slds-theme_shade">
+                    <div class="grid slds-grid slds-gutters slds-wrap">
+                        <div style="padding-bottom:2rem;" class="slds-col slds-size_1-of-1">
+                            <h1 class="slds-text-heading_large slds-align_absolute-center">Select a Route</h1>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label  slds-float_right">Number Of Tickets</label>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2 slds-float_left">
+                            <apex:input style="width: 10rem;" type="number" html-placeholder="Number of Tickets" html-min="1" html-max="30" value="{!ticketsCount}" required="" />
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2">
+                            <label class="slds-form-element__label  slds-float_right">Select a Route</label>
+                        </div>
+                        <div class="BoxColumn slds-col slds-size_1-of-2 slds-float_left">
+                            <apex:selectList style="width: 10rem;" size="1" value="{!selectedRoute}" id="RouteList">
+                                <apex:selectOptions id="RouteOptions" value="{!routeOptions}"/>
+                            </apex:selectList>
+                        </div>
+                    </div>
+
+                    <div style="padding-bottom: 3rem;" class="slds-grid">
+                        <div class="slds-col slds-size_1-of-2">
+                            <div style="padding-top:2rem;" class="slds-float_left">
+                                <apex:commandButton styleClass="slds-button slds-button_neutral" value="Previous" action="{!moveFromRouteSelectionPageToHomePage}" reRender="firstOutputPanel, selectRouteOutputPanel,  ScriptOutputPanel, " oncomplete="wizardStateHandler('RouteSelection');" immediate="true" />
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <div style="padding-top:2rem;" class="slds-float_right">
+                                <apex:commandButton styleClass="slds-button slds-button_brand"   value="Check Seats Availability" onclick="if(valiadteRouteInput() == true) return false;"  reRender="selectRouteOutputPanel,  ScriptOutputPanel" oncomplete="checkVehicleAndEnterDetailsForBooking();" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <apex:actionFunction name="checkVehicleAndEnterDetailsForBooking" action="{!checkSeatsAvailability}"
+                    reRender="selectRouteOutputPanel,  ScriptOutputPanel, vehicleInfoPage"
+                    oncomplete="wizardStateHandler('BusBooking'); return false;"/>
+
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel>
+
+        <!-- <apex:outputPanel id="SeatsNotAvailablePanel">
+            <apex:pageBlock rendered="{!hasVehicleInformation} == false">
+                <div class="slds-box wizard_box">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-1">
+                            <div class="slds-card">
+                                <span ><p class="slds-text-align_center">Desired number of seats is not available</p></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding-top:2rem;" class="slds-col slds-size_1-of-1 slds-align_absolute-center">
+                    <apex:commandButton styleClass="slds-button slds-button_neutral" value="Go to previous page" action="{!gotoPreviouscheckAvailableRoutes}" reRender="SeatsNotAvailablePanel, selectRouteOutputPanel,  ScriptOutputPanel" immediate="true"/>
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel> -->
+
+        <!-- <apex:actionFunction name="getMapResponse" action="{!showRouteOnMap}" reRender="selectRouteOutputPanel" onComplete="displayMap();"/> -->
+
+        <apex:outputPanel id="vehicleInfoPage">
+            <apex:pageBlock rendered="{!hasVehicleInformation}">
+                <div style="padding-bottom:5rem;" class="slds-box wizard_box slds-theme_shade">
+                    <apex:pageBlockTable id="StopRouteVehicleList" value="{!stpRouteVehicleList[0]}" var="stpRouteVehicleObj">
+                        <apex:column headerValue="Driver Name">
+                            {!stpRouteVehicleObj.Vehicle__r.Driver_Name__c}
+                        </apex:column>
+                        <apex:column headerValue="Bus Number">
+                            {!stpRouteVehicleObj.Vehicle__r.Name}
+                        </apex:column>
+                        <apex:column headerValue="Driver Phone">
+                            {!stpRouteVehicleObj.Vehicle__r.Driver_Phone__c}
+                        </apex:column>
+                        <apex:column headerValue="Boarding Point">
+                            {!stpRouteVehicleObj.Stop_Route__r.BusStop__r.Name}
+                        </apex:column>
+                        <apex:column headerValue="School">
+                            {!stpRouteVehicleObj.Stop_Route__r.BusRoute__r.Destination__r.Name}
+                        </apex:column>
+                        <apex:column headerValue="Arrival Time">
+                            {!stpRouteVehicleObj.Stop_Route__r.Bus_Arrival_Time_At_Stop__c}
+                        </apex:column>
+                        <apex:column headerValue="Bus Capacity">
+                            {!stpRouteVehicleObj.Vehicle__r.Bus_Capacity__c}
+                        </apex:column>
+                        <apex:column headerValue="Number of tickets">
+                            {!ticketsCount}
+                        </apex:column>
+                    </apex:pageBlockTable>
+                </div>
+
+                <br />
+
+                <div class="slds-box wizard_box slds-theme_shade">
+                    <apex:pageBlock id="ParentBlock" title="Parent's Information">
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <div class="parentCol slds-col slds-size_1-of-2">
+                                <apex:input style="width: 10rem;" type="text"  id="AccountFirstName" html-placeholder="First Name" value="{!accountFirstName}" />
+                            </div>
+                            <div class="parentCol slds-col slds-size_1-of-2">
+                                <apex:input style="width: 10rem;" type="text" id="AccountLastName" html-placeholder="Last Name" value="{!accountLastName}" />
+                            </div>
+                            <div class="parentCol slds-col slds-size_1-of-2">
+                                <apex:input style="width: 10rem;" type="text" id="AccountAddress" html-placeholder="Address" value="{!billingStreet}" />
+                            </div>
+                            <div class="parentCol slds-col slds-size_1-of-2">
+                                <apex:inputfield style="width: 10rem;" value="{!accObj.Phone}" id="AccountPhoneNumber" html-placeholder="Phone Number" />
+                            </div>
+                        </div>
+                    </apex:pageBlock>
+                </div>
+
+                <br />
+
+                <div class="slds-box wizard_box slds-theme_shade">
+                    <apex:pageBlock id="ChildPageBlock" title="Add Child's Information">
+                        <apex:outputPanel id="ChildPagePanel">
+                            <!-- <apex:variable value="{!0}" var="rowNum"/> -->
+                            <apex:repeat value="{!childrenList}" id="ChildrenListRepeatBlock" var="childObj">
+                                <div class="slds-align_absolute-center grid slds-grid slds-wrap">
+                                    <div class="childrenCol slds-col">
+                                        <apex:inputField value="{!childObj.LastName}" id="ChildName" style="width: 10rem;"  html-placeholder="Name" required=""/>
+                                    </div>
+                                    <div class="childrenCol slds-col">
+                                        <apex:inputField value="{!childObj.Age__c}" id="ChildAge" style="width: 10rem;"  html-placeholder="Age"/>
+                                    </div>
+                                    <div class="childrenCol slds-col">
+                                        <apex:inputfield value="{!childObj.Blood_Group__c}"  id="ChildBloodGroup" style="width: 10rem;"  html-placeholder="Blood Group"/>
+                                    </div>
+                                    <div class="childrenCol slds-col">
+                                        <apex:inputField value="{!childObj.childClass__c}" id="ChildClass" style="width: 10rem;" html-placeholder="Class"/>
+                                    </div>
+                                <!-- <div style="width:0.225rem" class="childrenCol slds-col">
+                                        <apex:commandLink rendered="{!rowNum > 0}" action="{!removeChildRow}" style="color:white; decoration:none;" value="X" styleClass="slds-button slds-button_destructive" reRender="ChildPagePanel">
+                                            <apex:param name="RowRemoval" value="{!rowNum}" assignTo="{!rowToRemove}"/>
+                                        </apex:commandLink>
+                                    </div> -->
+                                </div>
+                                <!-- <apex:variable value="{!rowNum + 1}" var="rowNum" /> -->
+                            </apex:repeat>
+                        </apex:outputPanel>
+                        <!-- <div class="slds-grid slds-gutters slds-wrap">
+                            <apex:commandButton styleClass="slds-align_absolute-center slds-button slds-button_brand" value="Add" action="{!addNewChildToContactList}" reRender="ChildPagePanel"/>
+                        </div> -->
+                    </apex:pageBlock>
+                </div>
+
+                <br />
+
+                <div style="margin-bottom:2rem;" class="slds-box wizard_box">
+
+                    <div class="slds-grid">
+                        <div class="slds-col slds-size_1-of-2">
+                            <div style="padding-top:2rem;" class="slds-float_left">
+                                <apex:commandButton styleClass="slds-button slds-button_neutral" immediate="true" value="Previous" action="{!gotoPreviouscheckAvailableRoutes}"  reRender="vehicleInfoPage, selectRouteOutputPanel,  ScriptOutputPanel" onComplete="wizardStateHandler('BusBooking');"  />
+                            </div>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <div style="padding-top:2rem;" class="slds-float_right">
+                                <apex:commandButton styleClass="slds-button slds-button_brand" value="Confirm Booking" onclick="if(validateParentAndChildInfo() == true) return false;" reRender="ConfirmationOutputPanel,  ScriptOutputPanel, vehicleInfoPage" oncomplete="busTicketBooking(); return false;"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <apex:actionFunction name="busTicketBooking" action="{!bookTickets}"
+                    reRender="ConfirmationOutputPanel,  ScriptOutputPanel, vehicleInfoPage" onComplete="wizardStateHandler('Confirmation'); return false;"/>
+                    <!-- <apex:actionFunction name="bookTickets" action="{!bookTickets}" reRender="ConfirmationOutputPanel,  ScriptOutputPanel, vehicleInfoPage" onComplete="wizardStateHandler('Confirmation'); return false;"/> -->
+
+
+                </div>
+            </apex:pageBlock>
+        </apex:outputPanel>
+
+        <apex:outputPanel title="Tickets booked" id="ConfirmationOutputPanel">
+            <apex:pageBlock rendered="{!hasConfirmedBooking}">
+                <div class="slds-box wizard_box slds-theme_shade">
+                    <h1 class="slds-text-heading_large slds-align_absolute-center">Bus tickets have been booked</h1>
+                </div>
+
+                <br />
+
+                <div class="slds-box wizard_box">
+
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Name:</label>
+                            {!accountFirstName} {!accountLastName}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Phone:</label>
+                            {!accObj.Phone}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Address:</label>
+                            {!accObj.BillingStreet}
+                        </div>
+                    </div>
+
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Boarding Point:</label>
+                            {!stpRouteVehicleList[0].Stop_Route__r.BusStop__r.Name}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Destination:</label>
+                            {!stpRouteVehicleList[0].Stop_Route__r.BusRoute__r.Destination__r.Name}
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <label class="slds-form-element__label">Arrival Time:</label>
+                            {!stpRouteVehicleList[0].Stop_Route__r.Bus_Arrival_Time_At_Stop__c}
+                        </div>
+                    </div>
+
+                    <div class="slds-grid slds-wrap slds-gutters">
+                        <div class="slds-col slds-size_1-of-1">
+                            <label class="slds-form-element__label">Children:</label>
+                            <apex:repeat value="{!childrenList}" var="child">
+                                <apex:outputText value="{!child.LastName}" />&nbsp;
+                            </apex:repeat>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="grid slds-grid slds-wrap">
+                    <div class="slds-align_absolute-center">
+                        <apex:commandButton value="Go To Home Page" action="{!goToHomePage}" styleClass="slds-button slds-button_brand" onclick="window.location.reload();" reRender="showPageBlockToEnterPostalCodeAndSelectSchool"/>
+                    </div>
+                </div>
+
+            </apex:pageBlock>
+        </apex:outputPanel>
+    </apex:form>
+    <!-- <apex:outputPanel>
+    <apex:pageBlock rendered="{!shouldDisplayMap}"> -->
+    <div id='map'></div>
+    <!-- </apex:pageBlock>
+    </apex:outputPanel> -->
+    <apex:outputPanel id="ScriptOutputPanel">
+        <script>
+            var wizardBoolValue;
+            var msg = '';
+            var title = '';
+            function wizardStateHandler(targetId) {
+                wizardBoolValue = false;
+                var progressbarWidth = '0%';
+                progressbarWidth = setProgressBarWidth(targetId);
+
+                changeWizardState(targetId, wizardBoolValue, progressbarWidth);
+            }
+
+            function changeWizardState(targetId, wizardBoolValue, progressbarWidth) {
+                console.log('change the wizard state...@ramda');
+                var wizardClass = document.getElementById(targetId).classList;
+                var progressbar = document.getElementById('Wizard_Progress');
+
+                if('true' == wizardBoolValue) {
+                    wizardClass.add('slds-is-active');
+                    console.log('adding ==> ');
+                } else {
+                    wizardClass.remove('slds-is-active');
+                    console.log('removing ==> ');
+                }
+                progressbar.style.width = progressbarWidth;
+            }
+
+            function setProgressBarWidth(targetId) {
+                if(targetId == 'RouteSelection') {
+                    if('[]' == '{!routeOptions}') {
+                        addMessageToToastr('', 'No routes available for this selection');
+
+                    }
+
+                    wizardBoolValue = '{!showCheckBusesResults}';
+                    if('false' == wizardBoolValue) {
+                        progressbarWidth = '0%';
+                    } else {
+                        progressbarWidth = '34%';
+                    }
+
+                } else if(targetId == 'BusBooking') {
+
+                    if('[]' == '{!stpRouteVehicleList}') {
+                        addMessageToToastr('', 'No vehicle available for this selection');
+                    }
+
+                    wizardBoolValue = '{!hasVehicleInformation}';
+                    if('true' == wizardBoolValue) {
+                        progressbarWidth = '66%';
+                    } else {
+                        progressbarWidth = '34%';
+                        if('false' == '{!gotoPreviouscheckAvailableRoutesBool}') {
+                            addMessageToToastr('', 'Number of seats available in bus is less than your requirement');
+                        }
+                    }
+                } else if(targetId == 'Confirmation') {
+
+                        wizardBoolValue = '{!hasConfirmedBooking}';
+                        if('true' == wizardBoolValue) {
+                            progressbarWidth = '100%';
+                        } else {
+                            progressbarWidth = '66%';
+                        }
+                }
+                return progressbarWidth;
+            }
+
+            function validatePostalInput() {
+
+                var postalCode = getValuesForValidation('PostalCode');
+                var selectedSchool = getValuesForValidation('SchoolList');
+                console.log('len: ',postalCode.length);
+                if(postalCode.length < 6
+                || false == Number.isInteger(parseInt(postalCode))) {
+                    msg = '';
+                    title = 'Postal code length has to be 6 and accepts numeric values only';
+                    addMessageToToastr(msg, title);
+                    return true;
+                } else if('' === selectedSchool) {
+                    msg = '';
+                    title = 'Select a School';
+                    addMessageToToastr(msg, title);
+                    return true;
+                }
+            }
+
+
+            function valiadteRouteInput() {
+                var selectedRoute = getValuesForValidation('RouteList');
+
+                if('' == selectedRoute) {
+                    msg = '';
+                    title = 'Select a Route';
+                    addMessageToToastr(msg, title);
+                    return true;
+                }
+            }
+
+            function validateParentAndChildInfo() {
+
+                var parentFName = getValuesForValidation('AccountFirstName');
+                var parentLName = getValuesForValidation('AccountLastName');
+                var parentPhoneNum = getValuesForValidation('AccountPhoneNumber');
+                var parentAddress = getValuesForValidation('AccountAddress');
+
+                if( '' === parentFName
+                 || '' === parentLName
+                 || '' === parentPhoneNum
+                 || '' === parentAddress) {
+                    addMessageToToastr('', 'Complete the parent\'s information');
+                    return true;
+                }
+                var isFieldEmpty = false;
+                console.log(' lzzz===>', jQuery("[id$=ChildPagePanel] input").val());
+                $("[id$=ChildPagePanel] input").each(function(){
+                    if($(this).val() == '') {
+                        isFieldEmpty = true;
+                    }
+                });
+
+                if(true == isFieldEmpty) {
+                    addMessageToToastr('','Complete the child\'s information');
+                    return true;
+                }
+
+            }
+
+
+
+            function getValuesForValidation(id) {
+            console.log(id,' getting values for validation: ', jQuery("[id$=" +id+ "]").val());
+            return jQuery("[id$=" + id + "]").val();
+            }
+
+            function addMessageToToastr(msg, title) {
+                toastr.warning(
+                    msg, title, {
+                    "timeout" : "500"
+                    }
+                );
+            }
+        </script>
+    </apex:outputPanel>
+    <!--
+    <script async="" defer=""
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-3pHvgF6lLibxWFCYfAG5e6QGEn7cmaE&callback=initMap">
+    </script> -->
+    </body>
+
+</apex:page>
