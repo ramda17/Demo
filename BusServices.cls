@@ -1,10 +1,9 @@
-//Ram Dafe
+//Author: Ram Dafe
 public with sharing class BusServices {
     public static String COMA =',';
     public static final String INVALID_POSTALCODE_MSG = 'Enter a valid postal code';
     @TestVisible String GOOGLE_APIKEY = 'AIzaSyD-3pHvgF6lLibxWFCYfAG5e6QGEn7cmaE';
 
- //r
     public String selectedSchoolOption                                              {get; set;}
     public String postalCode                                                        {get; set;}
     public String billingStreet                                                     {get; set;}
